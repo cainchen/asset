@@ -1,0 +1,84 @@
+version: '3.5'
+services:
+  mysql:
+    image: mysql:5.7
+    restart: always
+    container_name: mysql
+    hostname: mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpassword
+      MYSQL_DATABASE: snipeit
+      MYSQL_USER: snipeit
+      MYSQL_PASSWORD: dbpassword
+    extra_hosts:
+      - snipeit.domain.local:192.168.x.x
+      - mysql:192.168.x.x
+    ports:
+      - "3306:3306"
+    volumes:
+      - ./my.cnf:/etc/mysql/my.cnf
+      - /var/lib/mysql:/var/lib/mysql
+      - /etc/localtime:/etc/localtime:ro
+    dns:
+      - 192.168.x.x
+#    deploy:
+#      resources:
+#        limits:
+#          cpus: '0.5'
+#          memory: 300M
+#        reservations:
+#          cpus: '0.25'
+#          memory: 20M
+#    logging:
+#      driver: syslog
+#      options:
+#        syslog-address: "tcp://192.168.x.x:123"
+
+  snipeit:
+    depends_on:
+      - mysql
+    image: snipe/snipe-it
+    restart: always
+    container_name: snipeit
+    hostname: snipeit
+    environment:
+      APP_ENV: production
+      APP_KEY: base64:yRuvb8BjQhuBDo6tYRToAbQ8PwiIKt0xko2TOVk5QqM=
+      APP_URL: http://127.0.0.1:80
+      APP_TIMEZONE: 'Asia/Taipei'
+      DB_CONNECTION: mysql
+      DB_HOST: mysql
+      DB_DATABASE: snipeit
+      DB_USERNAME: snipeit
+      DB_PASSWORD: dbpassword
+      DB_CHARSET: utf8mb4
+      DB_COLLATION: utf8mb4_unicode_ci
+    extra_hosts:
+      - snipeit.domain.local:192.168.x.x
+      - mysql:192.168.x.x
+    dns:
+      - "192.168.x.x"
+    ports:
+      - "8088:80"
+    volumes:
+      - /var/lib/snipeit:/var/lib/snipeit
+      - /var/run/docker.sock:/var/run/docker.sock
+      - /etc/localtime:/etc/localtime:ro
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 300M
+        reservations:
+          cpus: '0.25'
+          memory: 20M
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+#    logging:
+#      driver: syslog
+#      options:
+#        syslog-address: "tcp://192.168.x.x:123"
